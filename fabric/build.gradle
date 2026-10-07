@@ -1,0 +1,96 @@
+plugins {
+    id 'com.github.johnrengelman.shadow'
+}
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+loom {
+    accessWidenerPath = project(":common").loom.accessWidenerPath
+}
+
+tasks {
+    processResources {
+        // The access widener must sit at the jar root so fabric.mod.json can reference it.
+        from(project(":common").file("src/main/resources/createthreadedtrains.accesswidener"))
+    }
+}
+
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+// Local Create Fabric build, produced by running `gradlew build` in the sibling repo.
+def createLibsDir = rootProject.file(rootProject.create_fabric_dir).absolutePath + "/build/libs"
+def createFabricJar = fileTree(dir: createLibsDir, include: "create-fabric-*.jar", exclude: ["*sources*", "*dev*"])
+        .toList()
+        .sort { -it.lastModified() } // newest local build wins
+        .with { it.isEmpty() ? null : it.first() }
+
+if (createFabricJar == null) {
+    throw new GradleException("No create-fabric jar found in $createLibsDir - run 'gradlew build' in ${rootProject.create_fabric_dir} first.")
+}
+
+repositories {
+    // Local CI artifacts bundled with the Create repo (e.g. Ponder 1.0.85)
+    maven { url = rootProject.file(rootProject.create_fabric_dir).absolutePath + "/libs/maven" }
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
+
+    modImplementation files(createFabricJar)
+
+    // The dependencies that Create bundles jar-in-jar are not usable in the dev runtime
+    // (nested jars stay intermediary), so they are declared explicitly. Mirrors the
+    // dependency list of the local Create Fabric build. They must be on the remap
+    // classpath so Tiny Remapper can resolve members inherited from them (e.g. calls
+    // through registrate's SimpleFlowableFluid subclasses).
+    def portingLibVersion = "3.1.0-beta.47+1.21.1"
+    ["accessors", "asm", "attributes", "base", "blocks", "brewing", "common", "conditions",
+     "config", "core", "data", "entity", "extensions", "fluids", "gametest",
+     "client_events", "gui_utils", "item_abilities", "lazy_registration", "level_events", "loot",
+     "mixin_extensions", "model_data", "model_loader", "models", "obj_loader",
+     "recipe_book_categories", "render_types", "tags", "transfer"].each {
+        modImplementation "io.github.fabricators_of_create.Porting-Lib:$it:$portingLibVersion"
+    }
+    modImplementation "com.tterrag.registrate_fabric:Registrate:1.3.77-MC1.21.1"
+    modImplementation "dev.engine-room.flywheel:flywheel-fabric-${rootProject.minecraft_version}:1.0.7-48"
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.1.3"
+    modImplementation "io.github.tropheusj:milk-lib:1.3.61"
+    modImplementation "net.createmod.ponder:Ponder-Fabric-${rootProject.minecraft_version}:1.0.85"
+    implementation "com.electronwill.night-config:core:3.6.3"
+    implementation "com.electronwill.night-config:toml:3.6.3"
+    implementation "com.google.code.findbugs:jsr305:3.0.2"
+
+    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
+    shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
+}
+
+processResources {
+    inputs.property 'version', project.version
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = 'dev-shadow'
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+}

@@ -1,0 +1,35 @@
+{
+    "schemaVersion": 1,
+    "id": "${modid}",
+    "version": "${version}",
+    "name": "${display_name}",
+    "description": "${description}",
+    "authors": [
+        "${authors}"
+    ],
+    "contact": {
+        "homepage": "${homepage}",
+        "issues": "${issues}",
+        "sources": "${source}",
+        "discord": "${discord}"
+    },
+    "license": "${license}",
+    "icon": "${icon}",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "de.mrjulsen.ctt.fabric.${main_class_name}Fabric"
+        ]
+    },
+    "mixins": [
+        "createthreadedtrains.mixins.json"
+    ],
+    "accessWidener": "createthreadedtrains.accesswidener",
+    "depends": {
+        "fabricloader": ">=${fabric_loader_version}",
+        "fabric-api": ">=${fabric_api_version}",
+        "minecraft": "~1.21.1",
+        "java": ">=21",
+        "create": "*"
+    }
+}

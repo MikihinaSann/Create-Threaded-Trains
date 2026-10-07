@@ -29,7 +29,9 @@ public final class CreateThreadedTrains {
     }
 
     public static void stop(MinecraftServer server) {
-        thread.shutdown();
+        if (thread != null) {
+            thread.shutdown();
+        }
         future = null;
         serverInstance = null;
     }

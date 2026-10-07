@@ -11,3 +11,4 @@ rootProject.name = 'Create Threaded Trains 1.21.1'
 
 include 'common'
 include 'neoforge'
+include 'fabric'

@@ -9,6 +9,6 @@ import net.minecraft.world.level.Level;
 @Mixin(GlobalRailwayManager.class)
 public interface GlobalRailwayManagerAccessor {
 
-    @Invoker("tickTrains")
+    @Invoker(value = "tickTrains", remap = false)
     void invokeTickTrains(Level level);
 }

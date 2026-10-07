@@ -11,7 +11,6 @@ import com.simibubi.create.content.trains.entity.Carriage;
 import com.simibubi.create.content.trains.entity.Train;
 
 import de.mrjulsen.ctt.CreateThreadedTrains;
-import dev.architectury.injectables.annotations.PlatformOnly;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
@@ -22,28 +21,29 @@ public class TrainMixin {
 
     @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;forEach(Ljava/util/function/Consumer;)V"), remap = false)
     private void onTickTrain(List<Carriage> carriages, Consumer<? super Carriage> consumer, Level level) {
-        CreateThreadedTrains.getServer().ifPresent(x -> x.execute(() -> {            
+        CreateThreadedTrains.getServer().ifPresent(x -> x.execute(() -> {
             for (Carriage c : carriages) {
                 c.manageEntities(level);
             }
         }));
     }
-    
-    @PlatformOnly("neoforge")
-    @Redirect(method = "collideWithOtherTrains", remap = false, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;explode", remap = false))
-    private Explosion redirectTrainExplosionForge(Level level, Entity source, double x, double y, double z, float power, ExplosionInteraction interaction) {
-        CreateThreadedTrains.getServer().ifPresent(s -> s.execute(() -> {            
+
+    // explode() is a Minecraft method, so its name differs per runtime namespace.
+    // Exactly one variant matches per environment: mojmap on NeoForge and Fabric dev,
+    // intermediary on Fabric production.
+    @Redirect(method = "collideWithOtherTrains", remap = false, require = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;explode(Lnet/minecraft/world/entity/Entity;DDDFLnet/minecraft/world/level/Level$ExplosionInteraction;)Lnet/minecraft/world/level/Explosion;", remap = false))
+    private Explosion redirectTrainExplosionNamed(Level level, Entity source, double x, double y, double z, float power, ExplosionInteraction interaction) {
+        CreateThreadedTrains.getServer().ifPresent(s -> s.execute(() -> {
             level.explode(source, x, y, z, power, interaction);
         }));
         return null; // Not needed, because Create doesn't use the explosion result.
-    }  
-    
-    @PlatformOnly(PlatformOnly.FABRIC)
-    @Redirect(method = "collideWithOtherTrains", remap = false, at = @At(value = "INVOKE", target = "Lnet/minecraft/class_1937;method_8437", remap = false))
-    private Explosion redirectTrainExplosionFabric(Level level, Entity source, double x, double y, double z, float power, ExplosionInteraction interaction) {
-        CreateThreadedTrains.getServer().ifPresent(s -> s.execute(() -> {            
+    }
+
+    @Redirect(method = "collideWithOtherTrains", remap = false, require = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/class_1937;method_8437", remap = false))
+    private Explosion redirectTrainExplosionIntermediary(Level level, Entity source, double x, double y, double z, float power, ExplosionInteraction interaction) {
+        CreateThreadedTrains.getServer().ifPresent(s -> s.execute(() -> {
             level.explode(source, x, y, z, power, interaction);
         }));
         return null; // Not needed, because Create doesn't use the explosion result.
-    }        
+    }
 }

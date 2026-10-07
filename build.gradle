@@ -80,6 +80,8 @@ subprojects {
                 "maven_group": rootProject.maven_group,
                 "create_neoforge_version": rootProject.create_neoforge_version,
                 "create_neoforge_dependency_version": rootProject.create_neoforge_dependency_version,
+                "fabric_loader_version": rootProject.fabric_loader_version,
+                "fabric_api_version": rootProject.fabric_api_version,
                 "main_class_name": rootProject.main_class_name
         ]
         filesMatching(['pack.mcmeta', 'fabric.mod.json', 'META-INF/mods.toml', 'createthreadedtrains.mixins.json']) {

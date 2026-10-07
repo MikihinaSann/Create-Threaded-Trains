@@ -35,3 +35,6 @@ side = "BOTH"
 
 [[mixins]]
 config = "createthreadedtrains.mixins.json"
+
+[[mixins]]
+config = "createthreadedtrains.neoforge.mixins.json"
